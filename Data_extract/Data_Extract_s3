@@ -1,0 +1,41 @@
+/** !!!! error result, under construction */
+
+package com.lickov.scala
+
+import org.apache.spark._   
+
+
+
+
+/** Code to extract data from S3 */
+
+object Data_Extract_s3  {
+  
+  /** Makes sure only ERROR messages get logged to avoid log spam. */
+  def setupLogging() = {
+    import org.apache.log4j.{Level, Logger}   
+    val rootLogger = Logger.getRootLogger()
+    rootLogger.setLevel(Level.ERROR)   
+  }
+    
+    
+  /** AWS credentials. 
+   *  Set using environment variables
+   *  To avoid their direct insert into code they are  */
+  
+   def main(args: Array[String]) {
+   
+         // Create a SparkContext using every core of the local machine
+        val sc = new SparkContext("local[*]", "Data_Extract_s3")
+      								
+        val data = sc.textFile("s3a://splaydata-lickov/Marvel-names.txt")
+        
+        //just as testing exercise map lines into columns
+        import org.apache.spark.sql.Row
+        val rdd_sample = data.map(_.split('\t')).map(e ⇒ Row(e(0), e(1), e(2).trim.toInt, e(3).trim.toInt))
+        val rdd_count = rdd_sample.count
+        
+     /** TEST */
+    println(s"$rdd_count .... to je hrdinu")        
+   }
+}
