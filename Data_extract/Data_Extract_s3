@@ -3,7 +3,7 @@
 package com.lickov.scala
 
 import org.apache.spark._   
-
+import org.apache.spark.SparkContext
 
 
 
@@ -17,25 +17,38 @@ object Data_Extract_s3  {
     val rootLogger = Logger.getRootLogger()
     rootLogger.setLevel(Level.ERROR)   
   }
+  
+  // only for testing result !!!  Otherwise not needed.
+  //Function to extract hero ID -> hero name tuples (or None in case of failure)
+  def parseNames(line: String) : Option[(Int, String)] = {
+    var fields = line.split('\"')
+    if (fields.length > 1) {
+      return Some(fields(0).trim().toInt, fields(1))
+    } else {
+      return None // flatmap will just discard None results, and extract data from Some results.
+    }
+  }
     
-    
-  /** AWS credentials. 
-   *  Set using environment variables
-   *  To avoid their direct insert into code they are  */
   
    def main(args: Array[String]) {
    
          // Create a SparkContext using every core of the local machine
         val sc = new SparkContext("local[*]", "Data_Extract_s3")
-      								
-        val data = sc.textFile("s3a://splaydata-lickov/Marvel-names.txt")
+      	
+        //AWS credentials as environment variables
+        val accessKeyId = System.getenv("AWS_ACCESS_KEY_ID")
+        val secretAccessKey = System.getenv("AWS_SECRET_ACCESS_KEY")
+        sc.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", accessKeyId)
+        sc.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", secretAccessKey)
         
-        //just as testing exercise map lines into columns
-        import org.apache.spark.sql.Row
-        val rdd_sample = data.map(_.split('\t')).map(e ⇒ Row(e(0), e(1), e(2).trim.toInt, e(3).trim.toInt))
-        val rdd_count = rdd_sample.count
+        val data = sc.textFile("s3n://playdata-lickov/Marvel-names.txt")
+        
+        //just as testing exercise 
+				val namesRdd = data.flatMap(parseNames)
+
+        
         
      /** TEST */
-    println(s"$rdd_count .... to je hrdinu")        
+		 println(s"$namesRdd ")	    
    }
 }
